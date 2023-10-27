@@ -1,0 +1,121 @@
+ORG 800H  
+	 LXI H,TEKST1 ; TEKST PODANIA LICZBY  
+	 RST 3  
+	 MVI C,0 ; DLUGOSC WYRAZU  
+INPUT  
+	 RST 2 ; WPROWADZENIE DANYCH  
+	 CPI 0DH  
+	 JNZ STOS  
+	 JMP SUM  
+STOS  
+	 SUI 48D ; UMIESZCZENIE LICZBY NA STOSIE  
+	 PUSH PSW  
+	 INR C  
+	 MOV A,C  
+	 STA 920H  
+	 CPI 3  
+	 JM INPUT  
+	 JMP SUM  
+SUM  
+	 LDA 920H  
+	 CPI 0  
+	 JZ NULL ; SPRAWDZENIE CZY WYRAZ PUSTY  
+	 POP PSW  
+	 MOV D,A  
+	 LDA 920H  
+	 CPI 1  
+	 JZ SHOWHEX ; SPRAWDZENIE CZY LICZBA MA DZIESIATKI  
+	 POP PSW  
+	 MOV B,A  
+	 MVI C,0  
+SUMDEC  
+	 MOV A,D  
+	 ADD B  
+	 MOV D,A  
+	 INR C  
+	 MOV A,C  
+	 CPI 10D  
+	 JM SUMDEC  
+	 LDA 920H  
+	 CPI 2  
+	 JZ SHOWHEX ; SPRAWDZENIE CZY LICZBA MA SETKI  
+	 POP PSW  
+	 MOV B,A  
+	 MVI C,0  
+SUMHUN  
+	 MOV A,D  
+	 ADD B  
+	 JC FULL  
+	 MOV D,A  
+	 INR C  
+	 MOV A,C  
+	 CPI 100D  
+	 JM SUMHUN  
+SHOWHEX  
+	 LXI H,TEKST2 ; WYSWIETLENIE HEX  
+	 RST 3  
+	 MOV A,D  
+	 RST 4  
+	 MVI A,'h'  
+	 RST 1  
+SHOWBIN  
+	 LXI H,TEKST3 ; ROZPOCZECIE WYSWIETLANIA BIN  
+	 RST 3  
+	 MOV B,D  
+	 MVI C,0  
+	 MVI E,1  
+POW  
+	 MOV A,E ; TWORZY POTEGI AZ DO 2^7  
+	 PUSH PSW  
+	 ADD E  
+	 MOV E,A  
+	 MOV A,C  
+	 INR C  
+	 CPI 7  
+	 JM POW  
+LOOP  
+	 POP PSW  
+	 CPI 0  
+	 JZ END  
+	 JC REST ; RESETUJE CY  
+RETU  
+	 MOV D,A  
+	 MOV A,B  
+	 SUB D  
+	 JNC WR  
+	 JC WZ  
+WR  
+	 MOV B,A ; WYPISUJE 1  
+	 MVI A,'1'  
+	 RST 1  
+	 MOV A,B  
+	 JMP LOOP  
+WZ  
+	 CMC ; WYPISUJE 0  
+	 MVI A,'0'  
+	 RST 1  
+	 MOV A,B  
+	 JMP LOOP  
+REST  
+	 CMC  
+	 JMP RETU  
+END  
+	 HLT  
+FULL  
+	 LXI H,TEKST5  
+	 RST 3  
+	 HLT  
+NULL  
+	 LXI H,TEKST4  
+	 RST 3  
+	 HLT  
+TEKST1  
+	 DB 'PODAJ LICZBE:@'                   
+TEKST2  
+	 DB 10,13,'REPREZENTACJA HEXADECYMALNA:',10,13,'@'                   
+TEKST3  
+	 DB 10,13,'REPREZENTACJA BINARNA:',10,13,'@'                   
+TEKST4  
+	 DB 10,13,'NIEPOPRAWNE DANE!@'           
+TEKST5  
+	 DB 10,13,'ZA DUZA LICZBA!@'          
