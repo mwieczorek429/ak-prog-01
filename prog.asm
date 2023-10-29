@@ -1,104 +1,94 @@
-ORG 800H  
-	 LXI H,TEKST1 ; TEKST PODANIA LICZBY  
+	 ORG 800H  
+	 LXI H,TEKST1  
 	 RST 3  
-	 MVI C,0 ; DLUGOSC WYRAZU  
+	 MVI C,0  
 INPUT  
-	 RST 2 ; WPROWADZENIE DANYCH  
+	 RST 2  
 	 CPI 0DH  
 	 JNZ STOS  
 	 JMP SUM  
 STOS  
-	 SUI 48D ; UMIESZCZENIE LICZBY NA STOSIE  
+	 SUI 48D  
 	 PUSH PSW  
+	 CALL ISNUMBER  
 	 INR C  
 	 MOV A,C  
-	 STA 920H  
+	 STA DLUGOSC  
 	 CPI 3  
 	 JM INPUT  
 	 JMP SUM  
+ISNUMBER  
+	 STC  
+	 CMC  
+	 CPI 10D  
+	 JNC NULL  
+	 RET  
 SUM  
-	 LDA 920H  
+	 LDA DLUGOSC  
 	 CPI 0  
-	 JZ NULL ; SPRAWDZENIE CZY WYRAZ PUSTY  
+	 JZ NULL  
 	 POP PSW  
 	 MOV D,A  
-	 LDA 920H  
+	 LDA DLUGOSC  
 	 CPI 1  
-	 JZ SHOWHEX ; SPRAWDZENIE CZY LICZBA MA DZIESIATKI  
+	 JZ SHOWHEX  
 	 POP PSW  
+	 JZ ENDDEC  
 	 MOV B,A  
-	 MVI C,0  
 SUMDEC  
 	 MOV A,D  
-	 ADD B  
+	 ADI 10D  
 	 MOV D,A  
-	 INR C  
-	 MOV A,C  
-	 CPI 10D  
-	 JM SUMDEC  
-	 LDA 920H  
+	 DCR B  
+	 MOV A,B  
+	 CPI 0D  
+	 JNZ SUMDEC  
+ENDDEC 	 LDA DLUGOSC  
 	 CPI 2  
-	 JZ SHOWHEX ; SPRAWDZENIE CZY LICZBA MA SETKI  
+	 JZ SHOWHEX  
 	 POP PSW  
+	 JZ SHOWHEX  
 	 MOV B,A  
-	 MVI C,0  
 SUMHUN  
 	 MOV A,D  
-	 ADD B  
+	 ADI 100D  
 	 JC FULL  
 	 MOV D,A  
-	 INR C  
-	 MOV A,C  
-	 CPI 100D  
-	 JM SUMHUN  
+	 DCR B  
+	 MOV A,B  
+	 CPI 0D  
+	 JNZ SUMHUN  
 SHOWHEX  
-	 LXI H,TEKST2 ; WYSWIETLENIE HEX  
+	 LXI H,TEKST2  
 	 RST 3  
 	 MOV A,D  
 	 RST 4  
 	 MVI A,'h'  
 	 RST 1  
 SHOWBIN  
-	 LXI H,TEKST3 ; ROZPOCZECIE WYSWIETLANIA BIN  
+	 LXI H,TEKST3  
 	 RST 3  
-	 MOV B,D  
-	 MVI C,0  
-	 MVI E,1  
-POW  
-	 MOV A,E ; TWORZY POTEGI AZ DO 2^7  
-	 PUSH PSW  
-	 ADD E  
-	 MOV E,A  
-	 MOV A,C  
-	 INR C  
-	 CPI 7  
-	 JM POW  
-LOOP  
-	 POP PSW  
-	 CPI 0  
-	 JZ END  
-	 JC REST ; RESETUJE CY  
-RETU  
-	 MOV D,A  
-	 MOV A,B  
-	 SUB D  
-	 JNC WR  
-	 JC WZ  
-WR  
-	 MOV B,A ; WYPISUJE 1  
-	 MVI A,'1'  
-	 RST 1  
-	 MOV A,B  
-	 JMP LOOP  
-WZ  
-	 CMC ; WYPISUJE 0  
+	 MOV A,D  
+	 MVI C,8D  
+LOOPBIN  
+	 RAL  
+	 CNC SHOWZERO  
+	 CC SHOWONE  
+	 DCR C  
+	 JNZ LOOPBIN  
+	 JMP END  
+SHOWZERO  
+	 MOV B,A  
 	 MVI A,'0'  
 	 RST 1  
 	 MOV A,B  
-	 JMP LOOP  
-REST  
-	 CMC  
-	 JMP RETU  
+	 RET  
+SHOWONE  
+	 MOV B,A  
+	 MVI A,'1'  
+	 RST 1  
+	 MOV A,B  
+	 RET  
 END  
 	 HLT  
 FULL  
@@ -109,13 +99,15 @@ NULL
 	 LXI H,TEKST4  
 	 RST 3  
 	 HLT  
+;Pola z danymi:	    
 TEKST1  
-	 DB 'PODAJ LICZBE:@'                   
+	 DB 'PODAJ LICZBE:@'                      
 TEKST2  
-	 DB 10,13,'REPREZENTACJA HEXADECYMALNA:',10,13,'@'                   
+	 DB 10,13,'REPREZENTACJA HEXADECYMALNA:',10,13,'@'                      
 TEKST3  
-	 DB 10,13,'REPREZENTACJA BINARNA:',10,13,'@'                   
+	 DB 10,13,'REPREZENTACJA BINARNA:',10,13,'@'                      
 TEKST4  
-	 DB 10,13,'NIEPOPRAWNE DANE!@'           
+	 DB 10,13,'NIEPOPRAWNE DANE!@'              
 TEKST5  
-	 DB 10,13,'ZA DUZA LICZBA!@'          
+	 DB 10,13,'ZA DUZA LICZBA!@'             
+DLUGOSC 	 DW 920H   
